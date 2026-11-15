@@ -3,9 +3,10 @@ import react from '@vitejs/plugin-react'
 import tailwind from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import { writeServiceWorker } from './scripts/offline-build.ts'
+import { pagesBase } from './scripts/pages-base.ts'
 
 export default defineConfig({
-  base: '/recomp/',
+  base: pagesBase(),
   plugins: [
     react(), tailwind(),
     {

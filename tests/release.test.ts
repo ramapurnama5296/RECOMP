@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { writeServiceWorker } from '../scripts/offline-build.ts'
+import { pagesBase } from '../scripts/pages-base.ts'
 
 test('manifest includes correctly sized local icons and the HTML references the configured Pages base', async () => {
   const publicPath = new URL('../public/', import.meta.url)
@@ -23,8 +24,12 @@ test('manifest includes correctly sized local icons and the HTML references the 
   assert.match(html, /viewport-fit=cover/)
   assert.match(html, /%BASE_URL%manifest\.webmanifest/)
   assert.match(html, /%BASE_URL%icons\/apple-touch\.png/)
-  const config = await readFile(new URL('../vite.config.ts', import.meta.url), 'utf8')
-  assert.match(config, /base: '\/recomp\/'/)
+})
+
+test('Pages uses the repository name with its original capitalization', () => {
+  assert.equal(pagesBase('example/RECOMP'), '/RECOMP/')
+  assert.equal(pagesBase('example/recomp'), '/recomp/')
+  assert.equal(pagesBase(''), '/recomp/')
 })
 
 test('build generates a versioned worker that precaches the scoped shell and updates only its own cache', async () => {

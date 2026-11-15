@@ -14,7 +14,7 @@ async function readyForOffline(page: Page) {
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true)
 }
 
-test('manifest, icons and deep-link shell are served under /recomp/', async ({ request, page }) => {
+test('manifest, icons and deep-link shell are served under the Pages base path', async ({ request, page }) => {
   const response = await request.get('manifest.webmanifest')
   expect(response.ok()).toBe(true)
   const manifest = await response.json()

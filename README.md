@@ -51,7 +51,7 @@ Buka `http://localhost:4173/recomp/`. Origin development dan preview berbeda seh
 4. Buka **Actions → Test and deploy RECOMP**. Jalankan **Run workflow** jika proses pertama dimulai sebelum Pages diaktifkan. Workflow menjalankan lint, type checking, unit test, build, dan Playwright sebelum memublikasikan `dist/`.
 5. Setelah deployment berhasil, buka `https://USERNAME.github.io/recomp/`. Navigasi memakai URL hash, misalnya `/recomp/#/workout`, dan tetap bekerja saat halaman dimuat ulang.
 
-Vite menggunakan base `/recomp/`. Jika nama repository berubah, sesuaikan `base` di `vite.config.ts` dan URL pengujian. Pindahkan data dengan backup saat mengganti origin atau base path.
+Vite memakai `/recomp/` secara lokal. Pada GitHub Actions, URL dan aset mengikuti nama repository, termasuk kapitalisasi. Gunakan alamat yang ditampilkan di **Settings → Pages**. Pindahkan data dengan backup saat mengganti origin atau path.
 
 ## Pasang di Home Screen iPhone
 
