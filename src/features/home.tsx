@@ -6,7 +6,7 @@ import { allowance, monthOccasions, nutrition, plannedDay, savingsFor } from '..
 import { Card, Dialog, fmt, Form, Meter, NoteField, rupiah, string } from '../ui/common.tsx'
 import { useData } from '../ui/context.ts'
 import { kindIcons, WeeklyProgress } from './plan.tsx'
-import { Creatine } from './supplements.tsx'
+import { DailySupplements } from './supplements.tsx'
 
 export function Home() {
   const { date, data, settings, save } = useData()
@@ -47,7 +47,7 @@ export function Home() {
         {totals.missingWheyLabel && <p className="muted">Sebagian nilai whey masih kosong.</p>}
         <a className="text-link" href="#/nutrition">Food diary <ArrowRight size={16}/></a>
       </Card>
-      <Card title="Suplemen hari ini" action={<Zap size={20} className="accent"/>}><Creatine date={date}/><a className="text-link" href="#/supplements">Lihat tracker <ArrowRight size={16}/></a></Card>
+      <Card title="Suplemen hari ini" action={<Zap size={20} className="accent"/>}><DailySupplements date={date}/><a className="text-link" href="#/supplements">Lihat tracker <ArrowRight size={16}/></a></Card>
       <Card title="Monthly discipline" action={<Wallet size={20} className="accent"/>}>
         <Meter label="Jatah mie terpakai" value={used} max={allowance}/>
         <p className={used > allowance ? 'warning' : 'muted'}>Sisa {Math.max(0, allowance - used)} kesempatan{used > allowance ? ' · Batas terlewati' : ''}</p>

@@ -4,8 +4,33 @@ import { test } from 'node:test'
 import { decodeBackup, encodeBackup } from '../src/data/backup.ts'
 import { openDatabase, readAll, removeWithChildren, replaceAll, write } from '../src/data/db.ts'
 import { initialSettings, record, tableNames } from '../src/domain/model.ts'
+import { dailySupplement } from '../src/domain/supplements.ts'
+import { nutrition } from '../src/domain/tracking.ts'
 
 const date = '2026-08-03'
+
+test('one daily whey serving is persisted once and adds protein without inventing calories', async () => {
+  const name = crypto.randomUUID()
+  const db = await openDatabase(name)
+  const settings = initialSettings(date)
+  const whey = dailySupplement('whey', date, settings)
+  for (let index = 0; index < 2; index++) await write(db, [{ table: 'supplements', put: { ...record(whey.id), ...whey } }])
+  db.close()
+
+  const reopened = await openDatabase(name)
+  const data = await readAll(reopened)
+  assert.equal(data.supplements.length, 1)
+  assert.equal(data.supplements[0].name, 'Whey protein konsentrat')
+  assert.deepEqual(nutrition([], data.supplements, date), {
+    calories: 0, protein: 24, caloriesLogged: false, proteinLogged: true, missingWheyLabel: true,
+  })
+  assert.equal(nutrition([], data.supplements, '2026-08-04').proteinLogged, false)
+  const next = dailySupplement('whey', '2026-08-04', { ...settings, whey: 'Whey uji', wheyProtein: 25, wheyCalories: 120 })
+  assert.deepEqual([next.name, next.protein, next.calories], ['Whey uji', 25, 120])
+  await write(reopened, [{ table: 'supplements', remove: whey.id }])
+  assert.equal((await readAll(reopened)).supplements.length, 0)
+  reopened.close()
+})
 
 test('workout and its sets persist when reconnecting and can be deleted together', async () => {
   const name = crypto.randomUUID()

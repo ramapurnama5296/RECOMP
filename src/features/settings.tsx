@@ -6,6 +6,7 @@ import { replaceAll, write } from '../data/db.ts'
 import { download } from '../data/files.ts'
 import { defaultRoutine, initialSettings, record, routineFor } from '../domain/model.ts'
 import type { Change, Kind, Routine, Settings as Profile, Snapshot } from '../domain/model.ts'
+import { defaultWheyProtein } from '../domain/supplements.ts'
 import { plannedDay } from '../domain/tracking.ts'
 import { useData } from '../ui/context.ts'
 import { Card, Check, checked, Dialog, Field, Form, Heading, Num, number, optional, Select, string } from '../ui/common.tsx'
@@ -126,7 +127,7 @@ export function Settings() {
           <Num label="Creatine per hari (g)" name="creatine" min={0.01} defaultValue={settings.creatine} required/>
           <Field label="Nama whey" name="whey" defaultValue={settings.whey}/>
           <Field label="Varian rasa whey" name="flavor" defaultValue={settings.flavor}/>
-          <Num label="Protein whey per serving (g)" name="wheyProtein" defaultValue={settings.wheyProtein}/>
+          <Num label="Protein whey per serving (g)" name="wheyProtein" defaultValue={settings.wheyProtein ?? defaultWheyProtein}/>
           <Num label="Kalori whey per serving (kcal)" name="wheyCalories" defaultValue={settings.wheyCalories}/>
           <Field label="Tujuan tabungan" name="savingsGoal" defaultValue={settings.savingsGoal}/>
           <Check name="compact" defaultChecked={settings.compact}>Tampilan lebih rapat</Check>
