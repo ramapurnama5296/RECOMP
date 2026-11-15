@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, ReactNode, InputHTMLAttributes } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Trash2, X } from 'lucide-react'
 
@@ -31,7 +31,8 @@ export function Num({ label, min = 0, step = 'any', ...props }: InputHTMLAttribu
 export function Select({ label, name, values, defaultValue, value, onChange }: {
   label: string; name: string; values: readonly (string | [string, string])[]; defaultValue?: string; value?: string; onChange?: (value: string) => void
 }) {
-  return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue} value={value} onChange={event => onChange?.(event.target.value)}>
+  const labelId = useId()
+  return <label className="field"><span id={labelId}>{label}</span><select aria-labelledby={labelId} name={name} defaultValue={defaultValue} value={value} onChange={event => onChange?.(event.target.value)}>
     {values.map(item => {
       const [key, text] = typeof item === 'string' ? [item, item] : item
       return <option key={key} value={key}>{text}</option>

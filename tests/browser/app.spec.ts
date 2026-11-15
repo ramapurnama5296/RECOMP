@@ -14,6 +14,13 @@ async function readyForOffline(page: Page) {
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true)
 }
 
+async function logCreatine(page: Page) {
+  const creatine = page.getByRole('checkbox', { name: /Creatine/ })
+  await creatine.click()
+  await expect(creatine).toBeChecked()
+  await expect(page.getByText('Sudah dikonsumsi')).toBeVisible()
+}
+
 test('manifest, icons and deep-link shell are served under the Pages base path', async ({ request, page }) => {
   const response = await request.get('manifest.webmanifest')
   expect(response.ok()).toBe(true)
@@ -46,12 +53,10 @@ test('workout and sets survive reload, and a creatine checkbox is available each
   await page.getByRole('button', { name: /Latihan uji/ }).click()
   await expect(page.getByRole('checkbox', { name: 'Set 1 Goblet squat selesai' })).toBeChecked()
   await page.goto('./#/supplements')
-  await page.getByRole('checkbox', { name: /Creatine/ }).check()
-  await expect(page.getByText('Sudah dikonsumsi')).toBeVisible()
+  await logCreatine(page)
   await page.getByRole('button', { name: 'Periode sebelumnya' }).click()
   await expect(page.getByRole('checkbox', { name: /Creatine/ })).not.toBeChecked()
-  await page.getByRole('checkbox', { name: /Creatine/ }).check()
-  await expect(page.getByText('Sudah dikonsumsi')).toBeVisible()
+  await logCreatine(page)
 })
 
 test('shell reloads offline and can write data to IndexedDB', async ({ page, context }) => {
@@ -64,6 +69,7 @@ test('shell reloads offline and can write data to IndexedDB', async ({ page, con
   await page.getByRole('button', { name: 'Catatan', exact: true }).click()
   await page.getByLabel('Catatan', { exact: true }).fill('Catatan offline uji')
   await page.getByRole('button', { name: 'Simpan', exact: true }).click()
+  await expect(page.getByText('Catatan offline uji')).toBeVisible()
   await page.reload()
   await expect(page.getByText('Catatan offline uji')).toBeVisible()
 })
@@ -93,8 +99,7 @@ test('all primary and report routes fit a narrow iPhone viewport and support key
 
 test('accepting a service worker update keeps the user profile and logged data', async ({ page, request }) => {
   await onboard(page)
-  await page.getByRole('checkbox', { name: /Creatine/ }).check()
-  await expect(page.getByText('Sudah dikonsumsi')).toBeVisible()
+  await logCreatine(page)
   await readyForOffline(page)
   expect((await request.post('/__test/release')).ok()).toBe(true)
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update() })
