@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.pnpm-store/
+.test-edge/
+playwright/.cache/
+test-results/
+playwright-report/
+*.local
+recomp-backup*.json
+recomp-report*.csv
+.env*
+*.zip
+
