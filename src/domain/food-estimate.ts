@@ -1,4 +1,4 @@
-import { foodCatalog } from './food-catalog.ts'
+import { findFood } from './food-catalog.ts'
 import type { CatalogFood } from './food-catalog.ts'
 
 export interface EstimateItem {
@@ -10,19 +10,19 @@ export interface EstimateItem {
 
 const wordAmounts: Readonly<Partial<Record<string, number>>> = {
   seperempat: 0.25, setengah: 0.5, satu: 1, dua: 2, tiga: 3, empat: 4, lima: 5,
+  enam: 6, tujuh: 7, delapan: 8, sembilan: 9, sepuluh: 10,
 }
 const amount = '(?:\\d+\\s*/\\s*\\d+|\\d+(?:[.,]\\d+)?|' + Object.keys(wordAmounts).join('|') + ')'
-const unit = '(?:kilogram|kg|gram|gr|g|porsi|centong|potong|iris|butir|buah)'
+const householdUnits = 'porsi|centong|potong|iris|butir|buah|tusuk|mangkuk|piring|gelas|ekor|sdm'
+const unit = `(?:kilogram|kg|gram|gr|g|${householdUnits})`
 const leadingQuantity = new RegExp(`^(${amount})\\s*(${unit})?\\s+(.+)$`)
 const trailingQuantity = new RegExp(`^(.+?)\\s+(${amount})\\s*(${unit})?$`)
 const quantityOnly = new RegExp(`^(${amount})\\s*(${unit})?$`)
-
-const foodsByName = new Map(foodCatalog.flatMap(food => [food.name, ...(food.aliases ?? [])]
-  .map(name => [name.toLowerCase(), food] as const)))
+const singleUnit = new RegExp(`\\bse(${householdUnits})\\b`, 'g')
 
 function normalize(value: string) {
   return value.toLowerCase().trim().replace(/\s+/g, ' ')
-    .replace(/\bse(porsi|centong|potong|iris|butir|buah)\b/g, '1 $1')
+    .replace(/\b(se)?mangkok\b/g, '$1mangkuk').replace(singleUnit, '1 $1')
 }
 
 function amountOf(value: string) {
@@ -35,15 +35,17 @@ function amountOf(value: string) {
 
 function mealItem(input: string, portion: string): EstimateItem {
   const normalized = normalize(input)
-  const trailing = trailingQuantity.exec(normalized)
-  const leading = leadingQuantity.exec(normalized)
-  const food = foodsByName.get(trailing?.[1] ?? leading?.[3] ?? normalized)
+  const exact = findFood(input)
+  const trailing = exact ? null : trailingQuantity.exec(normalized)
+  const trailingFood = trailing ? findFood(trailing[1]) : undefined
+  const leading = exact || trailingFood ? null : leadingQuantity.exec(normalized)
+  const food = exact ?? trailingFood ?? (leading ? findFood(leading[3]) : undefined)
   if (!food) return { input, assumed: false }
 
   const separate = quantityOnly.exec(normalize(portion))
-  const quantity = separate?.[1] ?? trailing?.[2] ?? leading?.[1]
-  const servingUnit = (separate ? separate[2] : trailing ? trailing[3] : leading?.[2]) ?? 'porsi'
-  if (!quantity && portion.trim()) return { input, food, assumed: false }
+  if (portion.trim() && !separate) return { input, food, assumed: false }
+  const quantity = separate?.[1] ?? (trailingFood ? trailing?.[2] : leading?.[1])
+  const servingUnit = (separate ? separate[2] : trailingFood ? trailing?.[3] : leading?.[2]) ?? 'porsi'
 
   const count = quantity ? amountOf(quantity) : 1
   const gramsPerUnit = servingUnit === 'kg' || servingUnit === 'kilogram' ? 1000
@@ -55,17 +57,26 @@ function mealItem(input: string, portion: string): EstimateItem {
   }
 }
 
-function mealParts(text: string) {
-  return text.split(/[+;\n]|\s+(?:dan|sama)\s+|,\s+|,(?=\D)/i)
-    .map(part => part.trim().replace(/^(?:dan|sama)\s+/i, '')).filter(Boolean)
+function mealItems(text: string, portion: string): EstimateItem[] {
+  const input = text.trim()
+  if (!input) return []
+  const whole = mealItem(input, portion)
+  if (whole.food) return [whole]
+
+  return input.split(/[+;\n]/).flatMap(group => {
+    const combined = mealItem(group.trim(), '')
+    if (combined.food) return [combined]
+    return group.split(/\s+(?:dan|sama)\s+|,\s+|,(?=\D)/i)
+      .map(part => part.trim().replace(/^(?:dan|sama)\s+/i, '')).filter(Boolean)
+      .map(part => mealItem(part, ''))
+  })
 }
 
 export function estimateMeal(name: string, portion: string) {
-  const parts = mealParts(name)
-  const items = parts.map(part => mealItem(part, parts.length === 1 ? portion : ''))
-  if (parts.length < 2 || !portion.trim()) return items
+  const items = mealItems(name, portion)
+  if (items.length < 2 || !portion.trim()) return items
 
-  const savedWeights = mealParts(portion).map(part => mealItem(part, ''))
+  const savedWeights = mealItems(portion, '')
   const sameFoods = savedWeights.length === items.length && savedWeights.every((item, index) =>
     item.food && item.food === items[index].food && item.grams !== undefined && !item.assumed)
   return sameFoods ? savedWeights : items

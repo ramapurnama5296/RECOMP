@@ -119,6 +119,22 @@ test('a meal estimate works offline, applies corrected weights and survives relo
   await expect(page.getByText('320 kcal · 12,8 g protein · Estimasi', { exact: true })).toBeVisible()
 })
 
+test('the Indonesian food catalog can be searched and selected offline', async ({ page, context }) => {
+  await onboard(page)
+  await readyForOffline(page)
+  await context.setOffline(true)
+  await page.goto('./#/nutrition/new')
+  const editor = page.getByRole('dialog', { name: 'Catat makanan' })
+  await editor.getByText('Cari di katalog makanan', { exact: true }).click()
+  await editor.getByRole('searchbox', { name: 'Cari nama makanan' }).fill('terang bulan')
+  await editor.getByRole('button', { name: /^Martabak manis/ }).click()
+  await expect(editor.getByLabel('Nama makanan')).toHaveValue('Martabak manis')
+  await editor.getByLabel('Berat Martabak manis (g)').fill('60')
+  await editor.getByRole('button', { name: 'Pakai estimasi' }).click()
+  await expect(editor.getByLabel('Kalori (kcal)')).toHaveValue('159.2')
+  await expect(editor.getByLabel('Protein (g)', { exact: true })).toHaveValue('2.8')
+})
+
 test('all primary and report routes fit a narrow iPhone viewport and support keyboard focus', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 })
   await onboard(page)

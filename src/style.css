@@ -102,6 +102,11 @@ progress::-moz-progress-bar { background: var(--accent); border-radius: 10px; }
 .field textarea { resize: vertical; }
 .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; min-width: 0; }
 .form { display: grid; gap: 12px; min-width: 0; }
+.food-catalog { border: 1px solid var(--border); border-radius: 12px; padding: 0 11px; }
+.food-catalog > summary { cursor: pointer; padding-block: 11px; min-height: 44px; font-weight: 700; }
+.food-catalog > .form { padding-bottom: 11px; }
+.food-catalog-results { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.food-catalog-results .button { display: block; width: 100%; text-align: left; overflow-wrap: anywhere; }
 fieldset { padding: 12px; border: 1px solid #424242; border-radius: 12px; min-inline-size: 0; }
 legend { padding: 0 5px; font-weight: 750; font-size: .875rem; }
 .check { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }

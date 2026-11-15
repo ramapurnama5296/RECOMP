@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { timeNow } from '../domain/calendar.ts'
-import { foodCatalog } from '../domain/food-catalog.ts'
+import { searchFoods } from '../domain/food-catalog.ts'
 import { estimateMeal, itemNutrition, mealNutrition } from '../domain/food-estimate.ts'
 import type { EstimateItem } from '../domain/food-estimate.ts'
 import { meals } from '../domain/model.ts'
@@ -8,6 +8,7 @@ import type { Favorite, Food, FoodDetails } from '../domain/model.ts'
 import { Check, checked, Dialog, Field, fmt, Form, NoteField, Num, number, optional, Select, string } from '../ui/common.tsx'
 
 type EstimateDraft = Omit<EstimateItem, 'grams'> & { weight: string }
+const catalogPageSize = 12
 
 export function FoodEditor({ entry, selected, close, save }: {
   entry: Food | Favorite | null
@@ -22,10 +23,19 @@ export function FoodEditor({ entry, selected, close, save }: {
   const [protein, setProtein] = useState(String(entry?.protein ?? ''))
   const [estimated, setEstimated] = useState(entry?.estimated ?? false)
   const [draft, setDraft] = useState<EstimateDraft[]>()
+  const [query, setQuery] = useState('')
+  const [catalogLimit, setCatalogLimit] = useState(catalogPageSize)
+  const catalogToggle = useRef<HTMLElement>(null)
+  const catalog = useRef<HTMLDetailsElement>(null)
   const items = draft?.map(({ weight, ...item }) => ({
     ...item, weight, grams: /^\d+(?:[.,]\d*)?$/.test(weight.trim()) ? Number(weight.replace(',', '.')) : undefined,
   }))
   const total = items && mealNutrition(items)
+  const matches = searchFoods(query)
+
+  function showEstimate(foodName: string, weight: string) {
+    setDraft(estimateMeal(foodName, weight).map(({ grams, ...item }) => ({ ...item, weight: String(grams ?? '') })))
+  }
 
   return <Dialog title={existing ? 'Edit makanan' : 'Catat makanan'} close={close}>
     <Form save={async form => {
@@ -39,6 +49,32 @@ export function FoodEditor({ entry, selected, close, save }: {
     }}>
       <Field label="Nama makanan" name="name" placeholder="Nasi putih 100 g + tempe 2 iris"
         value={name} onChange={event => { setName(event.target.value); setDraft(undefined) }} required/>
+      <details className="food-catalog" ref={catalog}>
+        <summary ref={catalogToggle}>Cari di katalog makanan</summary>
+        <div className="form">
+          <Field label="Cari nama makanan" type="search" placeholder="Mis. sate ayam, rendang, martabak"
+            value={query} onChange={event => {
+              setQuery(event.target.value)
+              setCatalogLimit(catalogPageSize)
+            }}/>
+          <p className="muted" role="status">{matches.length ? `${matches.length} makanan · estimasi per 100 g` : 'Makanan belum ditemukan di katalog.'}</p>
+          {matches.length > 0 && <ul className="food-catalog-results">
+            {matches.slice(0, catalogLimit).map(food => <li key={food.name}>
+              <button type="button" className="button" onClick={() => {
+                setName(food.name)
+                setPortion('')
+                showEstimate(food.name, '')
+                catalogToggle.current?.focus()
+                if (catalog.current) catalog.current.open = false
+              }}>
+                <span>{food.name}</span><small>{fmt(food.calories)} kcal · {fmt(food.protein)} g protein</small>
+              </button>
+            </li>)}
+          </ul>}
+          {matches.length > catalogLimit && <button type="button" className="button"
+            onClick={() => setCatalogLimit(limit => limit + catalogPageSize)}>Tampilkan lebih banyak</button>}
+        </div>
+      </details>
       <div className="field-grid">
         <Field label="Tanggal" name="date" type="date" defaultValue={existing?.date ?? selected} required/>
         <Field label="Waktu makan" name="time" type="time" defaultValue={entry?.time ?? timeNow()} required/>
@@ -47,7 +83,7 @@ export function FoodEditor({ entry, selected, close, save }: {
           onChange={event => { setPortion(event.target.value); setDraft(undefined) }}/>
       </div>
       <button type="button" className="button subtle" disabled={!name.trim()}
-        onClick={() => setDraft(estimateMeal(name, portion).map(({ grams, ...item }) => ({ ...item, weight: String(grams ?? '') })))}>
+        onClick={() => showEstimate(name, portion)}>
         Estimasi kalori &amp; protein
       </button>
       {items && <fieldset className="form">
@@ -72,9 +108,6 @@ export function FoodEditor({ entry, selected, close, save }: {
         })}
         {total ? <p className="row" role="status"><span>Total estimasi</span><strong>{fmt(total.calories)} kcal · {fmt(total.protein)} g protein</strong></p>
           : <p className="muted">Periksa nama makanan dan isi berat yang masih kosong, atau masukkan total secara manual.</p>}
-        {items.some(item => !item.food) && <details className="muted"><summary>Lihat makanan di katalog</summary>
-          <p>{foodCatalog.map(food => food.name).join(', ')}</p>
-        </details>}
         <div className="button-row">
           <button type="button" className="button" disabled={!total} onClick={() => {
             if (!total) return
