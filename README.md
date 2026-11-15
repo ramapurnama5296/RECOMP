@@ -15,6 +15,12 @@ npm run dev
 
 Buka `http://localhost:5173/recomp/`. Selesaikan onboarding untuk membuat profil dan memilih jadwal PT Kamis atau Jumat. Isi tanggal mulai dan target pribadi. Untuk memasukkan konsumsi mie yang sudah terjadi, isi tanggal dan nama hidangan di bagian catatan awal. Satu waktu makan dapat memuat beberapa hidangan dalam satu entri. Target kalori bisa dikosongkan.
 
+## Estimasi makanan offline
+
+Di **Nutrition Tracker → Tambah makanan**, coba `nasi putih 100 g + ayam bakar 1 potong + tempe 2 iris`, lalu tekan **Estimasi kalori & protein**. Koreksi asumsi berat dalam gram dan tekan **Pakai estimasi** untuk mengisi kolom kalori dan protein. Hasil yang disimpan diberi label **Estimasi**. Untuk satu makanan, berat juga bisa diisi di kolom **Porsi**. Jika makanan belum ada di katalog, total dapat diisi manual.
+
+Katalog kecil ini memakai energi dan protein per 100 g bagian yang dimakan dari [TKPI 2017](https://repository.kemkes.go.id/book/777) dan [USDA FoodData Central SR Legacy](https://fdc.nal.usda.gov/download-datasets/). ID rujukan tercantum pada tiap hasil. Ukuran potong, iris, dan porsi merupakan asumsi yang dapat disunting.
+
 ## Build dan pengujian
 
 ```powershell

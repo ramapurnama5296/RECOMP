@@ -17,6 +17,7 @@ const routine = z.object({ kind: z.enum(['weights', 'cardio', 'rest']), minutes:
 const foodFields = {
   name, time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), meal: z.enum(meals),
   calories: number, protein: number, carbs: number.optional(), fat: number.optional(), portion: text, note: text,
+  estimated: z.boolean().optional(),
 }
 const schemas = {
   settings: base.extend({

@@ -46,14 +46,18 @@ test('backup validates dates, handles optional photos, merges without duplicatio
   const db = await openDatabase(crypto.randomUUID())
   const body = { ...record(), date, values: { weight: 68 }, note: '' }
   const saving = { ...record(), date, food: 'Mie uji', amount: 20000, trigger: '', alternative: '', next: '' }
+  const meal = { ...record(), date, name: 'Nasi uji', time: '12:00', meal: 'Lunch' as const, calories: 180, protein: 3,
+    portion: '100 g', note: '', estimated: true }
   await write(db, [
     { table: 'settings', put: initialSettings(date) },
     { table: 'body', put: body },
     { table: 'photos', put: { ...record(), date, bodyId: body.id, image: 'data:image/jpeg;base64,YQ==' } },
     { table: 'savings', put: saving },
+    { table: 'food', put: meal },
   ])
   const original = await readAll(db)
   const withoutPhotos = encodeBackup(original, false)
+  assert.deepEqual(decodeBackup(withoutPhotos).food, [meal])
   assert.equal(decodeBackup(withoutPhotos).photos.length, 0)
   assert.equal(decodeBackup(encodeBackup(original, true)).photos.length, 1)
   assert.throws(() => decodeBackup(withoutPhotos.replaceAll(date, '2026-08-32')))

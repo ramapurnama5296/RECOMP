@@ -31,7 +31,7 @@ export interface Exercise extends RecordBase { name: string }
 export interface Cardio extends Dated { minutes: number; speed?: number; incline?: number; distance?: number; exertion?: number; note: string }
 export interface Body extends Dated { values: Partial<Record<Metric, number>>; note: string }
 export interface Photo extends Dated { bodyId: string; image: string }
-export interface FoodDetails { name: string; time: string; meal: typeof meals[number]; calories: number; protein: number; carbs?: number; fat?: number; portion: string; note: string }
+export interface FoodDetails { name: string; time: string; meal: typeof meals[number]; calories: number; protein: number; carbs?: number; fat?: number; portion: string; note: string; estimated?: boolean }
 export type Food = Dated & FoodDetails
 export type Favorite = RecordBase & FoodDetails
 export interface Supplement extends Dated {

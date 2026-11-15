@@ -74,6 +74,25 @@ test('shell reloads offline and can write data to IndexedDB', async ({ page, con
   await expect(page.getByText('Catatan offline uji')).toBeVisible()
 })
 
+test('a meal estimate works offline, applies corrected weights and survives reload', async ({ page, context }) => {
+  await onboard(page)
+  await readyForOffline(page)
+  await context.setOffline(true)
+  await page.goto('./#/nutrition/new')
+  const editor = page.getByRole('dialog', { name: 'Catat makanan' })
+  await editor.getByLabel('Nama makanan').fill('Nasi putih 100 g + tempe 2 iris')
+  await editor.getByRole('button', { name: 'Estimasi kalori & protein' }).click()
+  await expect(editor.getByLabel('Berat Tempe goreng (g)')).toHaveValue('50')
+  await editor.getByLabel('Berat Tempe goreng (g)').fill('40')
+  await editor.getByRole('button', { name: 'Pakai estimasi' }).click()
+  await expect(editor.getByLabel('Kalori (kcal)')).toHaveValue('320')
+  await expect(editor.getByLabel('Protein (g)', { exact: true })).toHaveValue('12.8')
+  await editor.getByRole('button', { name: 'Simpan', exact: true }).click()
+  await expect(page.getByText('320 kcal · 12,8 g protein · Estimasi', { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('320 kcal · 12,8 g protein · Estimasi', { exact: true })).toBeVisible()
+})
+
 test('all primary and report routes fit a narrow iPhone viewport and support keyboard focus', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 })
   await onboard(page)

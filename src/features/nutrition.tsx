@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { dateLabel, shift, timeNow, weekDays } from '../domain/calendar.ts'
-import { meals, record } from '../domain/model.ts'
+import { dateLabel, shift, weekDays } from '../domain/calendar.ts'
+import { record } from '../domain/model.ts'
 import type { Favorite, Food, FoodDetails } from '../domain/model.ts'
 import { nutrition } from '../domain/tracking.ts'
-import { Actions, Add, Card, Check, checked, Dialog, Empty, Field, fmt, Form, Heading, Meter, NoteField, Num, number, optional, Pager, Select, string } from '../ui/common.tsx'
+import { Actions, Add, Card, Dialog, Empty, Field, fmt, Form, Heading, Meter, Pager } from '../ui/common.tsx'
 import { useData } from '../ui/context.ts'
+import { FoodEditor } from './food-editor.tsx'
 
 export function Nutrition({ create }: { create: boolean }) {
   const { data, date, settings, save } = useData()
@@ -29,7 +30,7 @@ export function Nutrition({ create }: { create: boolean }) {
       {!entries.length && <Empty>Belum ada makanan tercatat pada tanggal ini.</Empty>}
       {entries.map(item => <div className="log-row divided" key={item.id}><div className="grow">
         <strong>{item.name}</strong><small>{item.meal} · {item.time}{item.portion && ' · ' + item.portion}</small>
-        <small>{fmt(item.calories)} kcal · {fmt(item.protein)} g protein
+        <small>{fmt(item.calories)} kcal · {fmt(item.protein)} g protein{item.estimated && ' · Estimasi'}
           {item.carbs !== undefined && ' · ' + fmt(item.carbs) + ' g karbohidrat'}
           {item.fat !== undefined && ' · ' + fmt(item.fat) + ' g lemak'}</small>
         {item.note && <small className="preserve">{item.note}</small>}</div>
@@ -38,7 +39,7 @@ export function Nutrition({ create }: { create: boolean }) {
     <Card title="Favorite foods">
       {!data.favorites.length && <Empty>Centang “Simpan ke favorit” saat menambahkan makanan.</Empty>}
       {data.favorites.map(item => <div className="log-row divided" key={item.id}>
-        <button className="record-link grow" onClick={() => setEditing(item)}><strong>{item.name}</strong><small>{fmt(item.calories)} kcal · {fmt(item.protein)} g protein · Ketuk untuk mencatat</small></button>
+        <button className="record-link grow" onClick={() => setEditing(item)}><strong>{item.name}</strong><small>{fmt(item.calories)} kcal · {fmt(item.protein)} g protein{item.estimated && ' · Estimasi'} · Ketuk untuk mencatat</small></button>
         <Actions remove={() => save([{ table: 'favorites', remove: item.id }])}/></div>)}
     </Card>
     <Card title="Riwayat minggu ini">
@@ -49,34 +50,14 @@ export function Nutrition({ create }: { create: boolean }) {
         </button>
       })}
     </Card>
-    {editing !== undefined && <Dialog title={editing && 'date' in editing ? 'Edit makanan' : 'Catat makanan'} close={() => setEditing(undefined)}>
-      <Form save={async form => {
-        const details: FoodDetails = {
-          name: string(form, 'name'), time: string(form, 'time'), meal: string(form, 'meal') as Food['meal'],
-          calories: number(form, 'calories'), protein: number(form, 'protein'), carbs: optional(form, 'carbs'), fat: optional(form, 'fat'),
-          portion: string(form, 'portion'), note: string(form, 'note'),
-        }
-        if (!details.name) throw new Error('Isi nama makanan.')
-        const day = string(form, 'date')
+    {editing !== undefined && <FoodEditor entry={editing} selected={selected} close={() => setEditing(undefined)}
+      save={async (details: FoodDetails, day: string, favorite: boolean) => {
         const existing = data.favorites.find(item => item.name.toLowerCase() === details.name.toLowerCase())
         await save([
           { table: 'food', put: { ...details, ...record(editing && 'date' in editing ? editing.id : undefined), date: day } },
-          ...(checked(form, 'favorite') ? [{ table: 'favorites' as const, put: { ...details, ...record(existing?.id) } }] : []),
+          ...(favorite ? [{ table: 'favorites' as const, put: { ...details, ...record(existing?.id) } }] : []),
         ]); setSelected(day); setEditing(undefined)
-      }}>
-        <Field label="Nama makanan" name="name" defaultValue={editing?.name} required/>
-        <div className="field-grid">
-          <Field label="Tanggal" name="date" type="date" defaultValue={editing && 'date' in editing ? editing.date : selected} required/>
-          <Field label="Waktu makan" name="time" type="time" defaultValue={editing?.time ?? timeNow()} required/>
-          <Select label="Kategori" name="meal" values={meals} defaultValue={editing?.meal ?? 'Lunch'}/>
-          <Field label="Porsi" name="portion" defaultValue={editing?.portion}/>
-          <Num label="Kalori (kcal)" name="calories" defaultValue={editing?.calories} required/>
-          <Num label="Protein (g)" name="protein" defaultValue={editing?.protein} required/>
-          <Num label="Karbohidrat (g)" name="carbs" defaultValue={editing?.carbs}/>
-          <Num label="Lemak (g)" name="fat" defaultValue={editing?.fat}/>
-        </div><NoteField value={editing?.note}/><Check name="favorite">Simpan ke favorit</Check>
-      </Form>
-    </Dialog>}
+      }}/>}
     {copying && <Dialog title="Salin makanan kemarin" close={() => setCopying(false)}>
       <Form label="Salin pilihan" save={async form => {
         const ids = new Set(form.getAll('copy'))
