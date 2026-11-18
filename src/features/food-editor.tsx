@@ -8,7 +8,26 @@ import type { Favorite, Food, FoodDetails } from '../domain/model.ts'
 import { Check, checked, Dialog, Field, fmt, Form, NoteField, Num, number, optional, Select, string } from '../ui/common.tsx'
 
 type EstimateDraft = Omit<EstimateItem, 'grams'> & { weight: string }
+type MacroInput = { value: string; fromEstimate: boolean }
 const catalogPageSize = 12
+
+function nutritionText({ calories, protein, carbs, fat }: NonNullable<ReturnType<typeof mealNutrition>>) {
+  return [
+    `${fmt(calories)} kcal`,
+    `${fmt(protein)} g protein`,
+    carbs === undefined ? undefined : `${fmt(carbs)} g karbohidrat`,
+    fat === undefined ? undefined : `${fmt(fat)} g lemak`,
+  ].filter(part => part !== undefined).join(' · ')
+}
+
+function estimatedInput(value: number) {
+  return String(Number(value.toFixed(1)))
+}
+
+function applyMacroEstimate(current: MacroInput, value: number | undefined): MacroInput {
+  if (value !== undefined) return { value: estimatedInput(value), fromEstimate: true }
+  return current.fromEstimate ? { value: '', fromEstimate: false } : current
+}
 
 export function FoodEditor({ entry, selected, close, save }: {
   entry: Food | Favorite | null
@@ -21,6 +40,8 @@ export function FoodEditor({ entry, selected, close, save }: {
   const [portion, setPortion] = useState(entry?.portion ?? '')
   const [calories, setCalories] = useState(String(entry?.calories ?? ''))
   const [protein, setProtein] = useState(String(entry?.protein ?? ''))
+  const [carbs, setCarbs] = useState<MacroInput>({ value: String(entry?.carbs ?? ''), fromEstimate: false })
+  const [fat, setFat] = useState<MacroInput>({ value: String(entry?.fat ?? ''), fromEstimate: false })
   const [estimated, setEstimated] = useState(entry?.estimated ?? false)
   const [draft, setDraft] = useState<EstimateDraft[]>()
   const [query, setQuery] = useState('')
@@ -47,12 +68,12 @@ export function FoodEditor({ entry, selected, close, save }: {
       if (!details.name) throw new Error('Isi nama makanan.')
       await save(details, string(form, 'date'), checked(form, 'favorite'))
     }}>
-      <Field label="Nama makanan" name="name" placeholder="Nasi putih 100 g + tempe 2 iris"
+      <Field label="Nama makanan" name="name" placeholder="Salmon sashimi 4 iris + salad ayam 1 porsi"
         value={name} onChange={event => { setName(event.target.value); setDraft(undefined) }} required/>
       <details className="food-catalog" ref={catalog}>
         <summary ref={catalogToggle}>Cari di katalog makanan</summary>
         <div className="form">
-          <Field label="Cari nama makanan" type="search" placeholder="Mis. sate ayam, rendang, martabak"
+          <Field label="Cari nama makanan" type="search" placeholder="Mis. salmon sashimi, Papaya, jajanan Jakarta"
             value={query} onChange={event => {
               setQuery(event.target.value)
               setCatalogLimit(catalogPageSize)
@@ -67,7 +88,7 @@ export function FoodEditor({ entry, selected, close, save }: {
                 catalogToggle.current?.focus()
                 if (catalog.current) catalog.current.open = false
               }}>
-                <span>{food.name}</span><small>{fmt(food.calories)} kcal · {fmt(food.protein)} g protein</small>
+                <span>{food.name}</span><small>{nutritionText(food)}</small>
               </button>
             </li>)}
           </ul>}
@@ -84,7 +105,7 @@ export function FoodEditor({ entry, selected, close, save }: {
       </div>
       <button type="button" className="button subtle" disabled={!name.trim()}
         onClick={() => showEstimate(name, portion)}>
-        Estimasi kalori &amp; protein
+        Estimasi gizi
       </button>
       {items && <fieldset className="form">
         <legend>Estimasi gizi</legend>
@@ -96,7 +117,7 @@ export function FoodEditor({ entry, selected, close, save }: {
             <div><strong>{item.food.name}</strong>
               <small>{item.food.source}{item.assumed && item.grams !== undefined ? ' · Asumsi porsi' : ''}</small>
               {item.food.detail && <small>{item.food.detail}</small>}
-              {values && <small>{fmt(values.calories)} kcal · {fmt(values.protein)} g protein</small>}
+              {values && <small>{nutritionText(values)}</small>}
             </div>
             <Field label="Berat (g)" aria-label={'Berat ' + item.food.name + ' (g)'} inputMode="decimal"
               value={item.weight} onChange={event => {
@@ -106,13 +127,17 @@ export function FoodEditor({ entry, selected, close, save }: {
               }}/>
           </div>
         })}
-        {total ? <p className="row" role="status"><span>Total estimasi</span><strong>{fmt(total.calories)} kcal · {fmt(total.protein)} g protein</strong></p>
+        {total ? <p className="row" role="status"><span>Total estimasi</span><strong>{nutritionText(total)}</strong></p>
           : <p className="muted">Periksa nama makanan dan isi berat yang masih kosong, atau masukkan total secara manual.</p>}
+        {total && (total.carbs === undefined || total.fat === undefined) &&
+          <p className="muted">Jika data karbohidrat atau lemak belum lengkap, isi totalnya secara manual jika diketahui.</p>}
         <div className="button-row">
           <button type="button" className="button" disabled={!total} onClick={() => {
             if (!total) return
-            setCalories(String(Number(total.calories.toFixed(1))))
-            setProtein(String(Number(total.protein.toFixed(1))))
+            setCalories(estimatedInput(total.calories))
+            setProtein(estimatedInput(total.protein))
+            setCarbs(current => applyMacroEstimate(current, total.carbs))
+            setFat(current => applyMacroEstimate(current, total.fat))
             setPortion(items.map(item => `${items.length > 1 ? item.food?.name + ' ' : ''}${item.grams} g`).join(' + '))
             setEstimated(true)
             setDraft(undefined)
@@ -123,10 +148,12 @@ export function FoodEditor({ entry, selected, close, save }: {
       <div className="field-grid">
         <Num label="Kalori (kcal)" name="calories" value={calories} onChange={event => setCalories(event.target.value)} required/>
         <Num label="Protein (g)" name="protein" value={protein} onChange={event => setProtein(event.target.value)} required/>
-        <Num label="Karbohidrat (g)" name="carbs" defaultValue={entry?.carbs}/>
-        <Num label="Lemak (g)" name="fat" defaultValue={entry?.fat}/>
+        <Num label="Karbohidrat (g)" name="carbs" value={carbs.value}
+          onChange={event => setCarbs({ value: event.target.value, fromEstimate: false })}/>
+        <Num label="Lemak (g)" name="fat" value={fat.value}
+          onChange={event => setFat({ value: event.target.value, fromEstimate: false })}/>
       </div>
-      {estimated && <p className="muted">Kalori dan protein tercatat sebagai estimasi.</p>}
+      {estimated && <p className="muted">Entri ini memakai estimasi gizi.</p>}
       <NoteField value={entry?.note}/><Check name="favorite">Simpan ke favorit</Check>
     </Form>
   </Dialog>

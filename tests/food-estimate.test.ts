@@ -48,6 +48,35 @@ test('finds familiar Indonesian aliases and estimates common serving units', () 
   assert.equal(searchFoods('tongseng')[0].name, 'Tongseng')
 })
 
+test('finds menu and snack tags without treating them as standalone foods', () => {
+  assert.ok(searchFoods('Papaya salmon').some(food => food.name === 'Salmon aburi don'))
+  assert.ok(searchFoods('Papaya bento').some(food => food.name === 'Kokyu yakitori bento'))
+  assert.ok(searchFoods('jajanan Jakarta').some(food => food.name === 'Telur gulung'))
+  assert.ok(searchFoods('jajanan Betawi').some(food => food.name === 'Kue pancong'))
+  assert.equal(estimateMeal('Papaya', '')[0].food, undefined)
+})
+
+test('scales complete nutrition by the slice, piece and pack', () => {
+  const items = estimateMeal('salmon sashimi 4 iris + 6 pcs salmon maki + onigiri salmon mentai 1 bungkus', '')
+  assert.deepEqual(items.map(item => item.grams), [80, 120, 110])
+  assert.equal(itemNutrition(items[0])?.carbs, 0)
+  const total = mealNutrition(items)
+  assert.equal(total?.calories.toFixed(1), '577.7')
+  assert.equal(total?.protein.toFixed(1), '32.5')
+  assert.equal(total?.carbs?.toFixed(1), '50.5')
+  assert.equal(total?.fat?.toFixed(1), '26.4')
+  assert.equal(estimateMeal('1 pack Papaya', '')[0].food, undefined)
+  assert.equal(estimateMeal('salmon maki', '1 pack')[0].grams, 120)
+})
+
+test('does not mistake partial macro totals for complete nutrition', () => {
+  const total = mealNutrition(estimateMeal('salmon sashimi 80 g + nasi putih 100 g', ''))
+  assert.equal(total?.calories.toFixed(1), '346.4')
+  assert.equal(total?.protein.toFixed(1), '19.3')
+  assert.equal(total?.carbs, undefined)
+  assert.equal(total?.fat, undefined)
+})
+
 test('every displayed catalog food can be estimated by name and quantity', () => {
   for (const food of foodCatalog) {
     const [item] = estimateMeal(food.name, '125 g')
