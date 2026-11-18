@@ -17,11 +17,17 @@ Buka `http://localhost:5173/recomp/`. Selesaikan onboarding untuk membuat profil
 
 ## Estimasi makanan offline
 
-Di **Nutrition Tracker → Tambah makanan**, buka **Cari di katalog makanan** untuk melihat kalori dan protein per 100 g, lalu pilih makanan. Untuk beberapa makanan, isi nama dan porsi di kolom **Nama makanan**, misalnya `sate ayam 6 tusuk + lontong 2 potong`, lalu tekan **Estimasi kalori & protein**. Koreksi berat bagian yang dimakan dan tekan **Pakai estimasi**. Jika makanan belum ada di katalog, total dapat diisi manual.
+Di **Nutrition Tracker → Tambah makanan**, buka **Cari di katalog makanan** untuk melihat kalori, protein, serta karbohidrat dan lemak jika tersedia per 100 g. Cari `Papaya`, `makanan Jepang`, atau `jajanan Jakarta` untuk menelusuri kelompok makanan. Untuk menghitung beberapa makanan, isi nama dan porsi seperti `salmon sashimi 4 iris + salmon maki 6 pcs` di kolom **Nama makanan**, lalu tekan **Estimasi gizi**. Koreksi berat yang dimakan, lalu tekan **Pakai estimasi**. Karbohidrat dan lemak dihitung untuk seluruh hidangan apabila data tiap komponennya tersedia.
 
 Katalog menyimpan lebih dari 1.300 nama bahan, lauk, masakan daerah, jajanan, dan minuman. Satuan seperti tusuk, potong, dan mangkuk memakai contoh berat untuk hidangan yang mendukungnya. Entri tanpa acuan porsi memakai 100 g sebagai patokan awal. Resep, saus, topping, dan ukuran saji dapat mengubah hasil.
 
 Data utama diambil dari [Nutrisi Pangan Indonesia (CC0 1.0)](https://github.com/aceedu/nutrisi-pangan-indonesia/blob/main/Nutrisi%20pangan%20Indonesia.csv), hasil kurasi [Anas Fikri Hanif](https://www.kaggle.com/datasets/anasfikrihanif/indonesian-food-and-drink-nutrition-dataset) yang mengacu pada [TKPI](https://repository.kemkes.go.id/book/777). Impor menyimpan ID, nama, kalori, dan protein setelah menyaring nilai di luar batas wajar dan ketidaksesuaian besar antara energi dan makronutrien. Nama ganda digabung dan data makanan pokok yang sudah ada tetap memakai rujukan asal, termasuk [USDA FoodData Central SR Legacy](https://fdc.nal.usda.gov/download-datasets/). Entri tambahan memakai acuan [FatSecret Indonesia](https://www.fatsecret.co.id/kalori-gizi/) dan estimasi resep yang diberi label pada hasilnya.
+
+Kata kunci Papaya memakai nama makanan yang pernah tercantum di katalog promo. Untuk makanan siap saji Papaya, pakai angka dari label kemasan jika tersedia karena nilai dan berat kotak di aplikasi memakai asumsi resep. [Promo Papaya 6–8 November 2026](https://katalogpromosi.com/promo-papaya-fresh-gallery-jakarta-weekend-minggu-ini/) · [Promo Papaya 13–15 November 2026](https://katalogpromosi.com/promo-papaya-fresh-gallery-jakarta-weekend/)
+
+Acuan khusus pada hasil estimasi merujuk ke data komposisi bahan atau produk pembanding. [USDA SR28, ikan dan hasil laut](https://www.ars.usda.gov/ARSUserFiles/80400535/Data/SR/SR28/reports/sr28fg15.pdf) · [Kewpie Roasted Sesame Dressing](https://www.kewpie.com.my/product/kewpie-roasted-sesame-dressing) · [Wagamama Chicken Katsu Curry](https://www.wagamama.com/menu/curry/chicken-katsu-curry) · [Wagamama Chicken Gyoza](https://www.wagamama.com/menu/gyoza/chicken-gyoza)
+
+Untuk merevisi menu Jepang, Papaya, atau jajanan Jakarta, buka [prepared-foods.ts](src/domain/prepared-foods.ts) di GitHub dan pilih ikon pensil. Angka gizi di file ini dihitung per 100 g, dan angka pada `serving` adalah berat dalam gram untuk setiap satuan. GitHub Actions menjalankan tes dan menerbitkan perubahan yang masuk ke branch `main`.
 
 ## Build dan pengujian
 
