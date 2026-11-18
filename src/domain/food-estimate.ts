@@ -8,12 +8,14 @@ export interface EstimateItem {
   assumed: boolean
 }
 
+type EstimatedNutrition = Pick<CatalogFood, 'calories' | 'protein' | 'carbs' | 'fat'>
+
 const wordAmounts: Readonly<Partial<Record<string, number>>> = {
   seperempat: 0.25, setengah: 0.5, satu: 1, dua: 2, tiga: 3, empat: 4, lima: 5,
   enam: 6, tujuh: 7, delapan: 8, sembilan: 9, sepuluh: 10,
 }
 const amount = '(?:\\d+\\s*/\\s*\\d+|\\d+(?:[.,]\\d+)?|' + Object.keys(wordAmounts).join('|') + ')'
-const householdUnits = 'porsi|centong|potong|iris|butir|buah|tusuk|mangkuk|piring|gelas|ekor|sdm'
+const householdUnits = 'porsi|centong|potong|iris|butir|buah|tusuk|mangkuk|piring|gelas|ekor|sdm|pcs|pack|bungkus'
 const unit = `(?:kilogram|kg|gram|gr|g|${householdUnits})`
 const leadingQuantity = new RegExp(`^(${amount})\\s*(${unit})?\\s+(.+)$`)
 const trailingQuantity = new RegExp(`^(.+?)\\s+(${amount})\\s*(${unit})?$`)
@@ -82,22 +84,35 @@ export function estimateMeal(name: string, portion: string) {
   return sameFoods ? savedWeights : items
 }
 
-export function itemNutrition({ food, grams }: EstimateItem) {
+export function itemNutrition({ food, grams }: EstimateItem): EstimatedNutrition | undefined {
   if (!food || grams === undefined || !Number.isFinite(grams) || grams <= 0) return undefined
   const scale = grams / 100
   const calories = food.calories * scale
   const protein = food.protein * scale
-  return Number.isFinite(calories) && Number.isFinite(protein) ? { calories, protein } : undefined
+  if (!Number.isFinite(calories) || !Number.isFinite(protein)) return undefined
+  const values: EstimatedNutrition = { calories, protein }
+  if (food.carbs !== undefined && Number.isFinite(food.carbs * scale)) values.carbs = food.carbs * scale
+  if (food.fat !== undefined && Number.isFinite(food.fat * scale)) values.fat = food.fat * scale
+  return values
 }
 
-export function mealNutrition(items: EstimateItem[]) {
+export function mealNutrition(items: EstimateItem[]): EstimatedNutrition | undefined {
   if (!items.length) return undefined
   const total = { calories: 0, protein: 0 }
+  let carbs: number | undefined = 0
+  let fat: number | undefined = 0
   for (const item of items) {
     const values = itemNutrition(item)
     if (!values) return undefined
     total.calories += values.calories
     total.protein += values.protein
+    carbs = carbs === undefined || values.carbs === undefined ? undefined : carbs + values.carbs
+    fat = fat === undefined || values.fat === undefined ? undefined : fat + values.fat
   }
-  return Number.isFinite(total.calories) && Number.isFinite(total.protein) ? total : undefined
+  if (!Number.isFinite(total.calories) || !Number.isFinite(total.protein)) return undefined
+  return {
+    ...total,
+    ...(Number.isFinite(carbs) ? { carbs } : {}),
+    ...(Number.isFinite(fat) ? { fat } : {}),
+  }
 }

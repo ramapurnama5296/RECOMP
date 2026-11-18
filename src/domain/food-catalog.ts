@@ -1,10 +1,14 @@
 import { indonesianFoodRows } from './indonesian-food-data.ts'
+import { jakartaSnacks, japaneseFoods } from './prepared-foods.ts'
 
 export interface CatalogFood {
   name: string
   aliases?: string[]
+  keywords?: readonly string[]
   calories: number
   protein: number
+  carbs?: number
+  fat?: number
   serving: { porsi: number } & Partial<Record<string, number>>
   source: string
   detail?: string
@@ -13,30 +17,43 @@ export interface CatalogFood {
 const soupServings = { porsi: 250, mangkuk: 250 }
 const lightDishServings = { porsi: 150, piring: 150 }
 
-const regionalDishes: Partial<Record<number, Partial<Pick<CatalogFood, 'name' | 'aliases' | 'serving' | 'detail'>>>> = {
+const regionalDishes: Partial<Record<number, Partial<Omit<CatalogFood, 'calories' | 'protein' | 'source'>>>> = {
   64: { aliases: ['bakso kuah'], serving: soupServings, detail: 'Acuan bakso kuah. Mi dan topping tambahan dihitung sesuai porsi.' },
-  66: { aliases: ['bala-bala', 'ote-ote'], serving: { porsi: 45, buah: 45, potong: 45 } },
+  66: { aliases: ['bala-bala', 'ote-ote', 'bakwan sayur'], keywords: ['jajanan Jakarta', 'gorengan'],
+    carbs: 39, fat: 10.2, serving: { porsi: 45, buah: 45, potong: 45 } },
+  216: { keywords: ['jajanan Jakarta', 'gorengan'], carbs: 35.8, fat: 6.6, serving: { porsi: 50, buah: 50, potong: 50 } },
   219: { aliases: ['coto makassar', 'coto mangkasara'], serving: soupServings },
   356: { serving: { porsi: 200, piring: 200 } },
+  375: { keywords: ['jajanan Jakarta Betawi'], carbs: 55.5, fat: 5.4, serving: { porsi: 45, buah: 45, potong: 45 } },
   395: { serving: soupServings },
   397: { aliases: ['gulai', 'gule', 'gule kambing'], serving: soupServings, detail: 'Acuan gulai kambing dengan kuah, tanpa nasi.' },
   468: { name: 'Lele goreng', serving: { porsi: 100, ekor: 100, potong: 100 } },
   683: { serving: lightDishServings },
   763: { serving: { porsi: 250, piring: 250 } },
-  876: { aliases: ['martabak', 'terang bulan', 'kue bandung', 'hok lo pan'], serving: { porsi: 100, potong: 60, iris: 60 },
+  809: { name: 'Kue talam', keywords: ['jajanan Jakarta Betawi'], carbs: 32, fat: 5,
+    serving: { porsi: 45, potong: 45, buah: 45 } },
+  876: { aliases: ['martabak', 'terang bulan', 'kue bandung', 'hok lo pan'], keywords: ['jajanan Jakarta'],
+    carbs: 49.3, fat: 5.5, serving: { porsi: 100, potong: 60, iris: 60 },
     detail: 'Acuan martabak manis. Isi, margarin, dan ukuran potong bisa berbeda.' },
-  879: { name: 'Martabak telur', aliases: ['martabak asin', 'martabak telor'], serving: { porsi: 100, potong: 50 },
+  879: { name: 'Martabak telur', aliases: ['martabak asin', 'martabak telor'], keywords: ['jajanan Jakarta'],
+    carbs: 29.5, fat: 5.1, serving: { porsi: 100, potong: 50 },
     detail: 'Acuan martabak telur dengan isian daging dan telur.' },
   893: { aliases: ['bakmi ayam'], serving: { porsi: 250, mangkuk: 250 } },
   894: { serving: soupServings },
   930: { name: 'Nasi uduk', serving: { porsi: 150, centong: 100, piring: 150 }, detail: 'Acuan nasi uduk tanpa lauk.' },
+  947: { aliases: ['onde onde'], keywords: ['jajanan Jakarta'], carbs: 44.3, fat: 8.9, serving: { porsi: 40, buah: 40, potong: 40 } },
+  965: { keywords: ['jajanan Jakarta', 'gorengan'], carbs: 42.4, fat: 13.3, serving: { porsi: 50, buah: 50, potong: 50 } },
   973: { aliases: ['empek-empek kapal selam', 'mpek-mpek kapal selam'], serving: { porsi: 100, buah: 100 } },
   976: { aliases: ['pempek', 'empek-empek', 'mpek-mpek'], serving: { porsi: 100, potong: 50, buah: 50 } },
+  1027: { keywords: ['jajanan Jakarta Betawi'], carbs: 43.8, fat: 2.4, serving: { porsi: 100, buah: 40, potong: 40 } },
   1037: { serving: soupServings, detail: 'Acuan rawon dengan kuah, tanpa nasi.' },
   1045: { aliases: ['rendang', 'rendang daging', 'rendang daging sapi', 'randang'], serving: { porsi: 100, potong: 50 },
     detail: 'Acuan rendang sapi tanpa nasi. Santan dan potongan daging memengaruhi hasil.' },
-  1048: { aliases: ['risol'], serving: { porsi: 50, buah: 50, potong: 50 } },
+  1048: { aliases: ['risol'], keywords: ['jajanan Jakarta', 'gorengan'], carbs: 70.5, fat: 3.5,
+    serving: { porsi: 50, buah: 50, potong: 50 } },
   1113: { aliases: ['sayur asam'], serving: soupServings },
+  1138: { name: 'Singkong goreng', keywords: ['jajanan Jakarta', 'gorengan'], carbs: 28, fat: 18,
+    serving: { porsi: 75, potong: 40 } },
   1141: { aliases: ['siomay bandung'], serving: lightDishServings },
   1144: { aliases: ['sup buntut'], serving: soupServings },
   1152: { serving: soupServings },
@@ -89,7 +106,7 @@ const commonDishes: readonly CatalogFood[] = [
     source: 'Estimasi resep', detail: 'Acuan teh seduh tanpa gula atau susu.' },
 ]
 
-// Calories and protein are per 100 g of edible food. Serving weights are editable estimates.
+// Nutrition values are per 100 g of edible food. Serving weights are editable estimates.
 // TKPI 2017: https://repository.kemkes.go.id/book/777
 // USDA SR Legacy records: https://fdc.nal.usda.gov/download-datasets/
 const staples: readonly CatalogFood[] = [
@@ -128,13 +145,14 @@ function register(food: CatalogFood) {
   const key = normalizeFoodName(food.name)
   if (foodsByName.has(key)) return
   const names = [key, ...(food.aliases ?? []).map(normalizeFoodName)]
-  entries.push({ food, names: names.map(name => name.split(' ')) })
+  const keywords = (food.keywords ?? []).flatMap(keyword => normalizeFoodName(keyword).split(' '))
+  entries.push({ food, names: names.map(name => [...name.split(' '), ...keywords]) })
   for (const name of names) {
     if (!foodsByName.has(name)) foodsByName.set(name, food)
   }
 }
 
-for (const food of [...staples, ...commonDishes]) register(food)
+for (const food of [...staples, ...commonDishes, ...japaneseFoods, ...jakartaSnacks]) register(food)
 for (const [id, originalName, calories, protein] of indonesianFoodRows) {
   const dish = regionalDishes[id]
   const name = dish?.name ?? originalName.replace(/ masakan$/i, '').replace(/ \+ /g, ' dan ')
